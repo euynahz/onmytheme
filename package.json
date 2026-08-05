@@ -42,6 +42,14 @@
     "typescript": "^5"
   },
   "description": "A visual CLI for browsing, installing, and applying Oh My Posh themes",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/euynahz/onmytheme.git"
+  },
+  "bugs": {
+    "url": "https://github.com/euynahz/onmytheme/issues"
+  },
+  "homepage": "https://github.com/euynahz/onmytheme#readme",
   "bin": {
     "oh-my-theme": "./bin/oh-my-theme.mjs",
     "omt": "./bin/oh-my-theme.mjs"

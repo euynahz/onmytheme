@@ -122,11 +122,23 @@ npm run verify
 
 Publishing is automated by [`.github/workflows/publish-npm.yml`](.github/workflows/publish-npm.yml). It runs the release checks, confirms that a pushed `v*` tag matches the version in `package.json`, and publishes with npm provenance.
 
-### One-time repository setup
+### First release
 
-1. In npm, configure **Trusted Publisher** for this package using **GitHub Actions** and enter this repository's owner/name, the `npm` environment, and `.github/workflows/publish-npm.yml` as the workflow file. Trusted publishing supplies the short-lived npm credential; do not add an `NPM_TOKEN` repository secret.
-2. In the GitHub repository, create an environment named `npm`. Optionally require reviewers or limit deployment tags in that environment to protect releases.
-3. Ensure GitHub Actions is allowed to use its default `GITHUB_TOKEN` permissions. The workflow explicitly requests `contents: read` and `id-token: write`, which npm Trusted Publishing requires.
+npm Trusted Publishing is configured per existing npm package, so a package's first publication needs a short-lived npm **Granular Access Token**. Create a GitHub environment named `npm`, then save that token as an environment secret named `NPM_TOKEN` before pushing the first release tag.
+
+The token needs read/write package access, must permit the workflow's non-interactive publish if your npm account uses two-factor authentication, and should expire shortly after the first successful release. Do not commit it or save it as a repository-level secret.
+
+### Configure Trusted Publishing after the first release
+
+After the package exists on npm, configure **Trusted Publisher** in its npm settings for **GitHub Actions** with these exact values:
+
+- GitHub owner: `euynahz`
+- Repository: `onmytheme`
+- Workflow filename: `publish-npm.yml`
+- GitHub environment: `npm`
+- Allowed operation: `npm publish`
+
+Then remove the `NPM_TOKEN` environment secret and revoke the initial granular token in npm. Future tags authenticate using the workflow's OpenID Connect identity; it explicitly requests `contents: read` and `id-token: write` for that purpose.
 
 ### Publish a version
 
