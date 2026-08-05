@@ -1,6 +1,6 @@
 import { execFileSync, spawn } from "child_process";
 import { createServer } from "net";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "fs";
 import { createRequire } from "module";
 import { dirname, join, resolve } from "path";
 import { fileURLToPath } from "url";
@@ -18,7 +18,7 @@ import {
   saveConfig,
 } from "../src/lib/config";
 import { downloadTheme } from "../src/lib/github";
-import { getProfilePath, getThemePath, isManagedTheme, listThemes } from "../src/lib/omp";
+import { getBuiltinThemesDir, getProfilePath, getThemePath, isManagedTheme, listThemes } from "../src/lib/omp";
 import { hasActiveOhMyPoshInitialization, switchTheme } from "../src/lib/profile";
 import { normalizeThemeName } from "../src/lib/theme-name";
 
@@ -177,6 +177,11 @@ async function initialize(): Promise<void> {
   console.log(`\nSaved configuration to ${getConfigPath()}.`);
   console.log(`Themes directory: ${config.themesDir}`);
   console.log(`Shell profile: ${config.profilePath}`);
+
+  const builtinCount = linkBuiltinThemes(config.themesDir);
+  if (builtinCount > 0) {
+    console.log(`Linked ${builtinCount} built-in themes to ${config.themesDir}.`);
+  }
 
   if (!isOhMyPoshAvailable()) {
     console.log(
@@ -358,6 +363,14 @@ function ensureProfileInitialization(config: OhMyThemeConfig): {
     const initLine = getInitializationLine(config.shell);
 
     if (hasActiveOhMyPoshInitialization(existing, config.shell)) {
+      // If the existing init line has a --config pointing outside the user's
+      // themes directory, replace it with a clean init line so that future
+      // theme switches via oh-my-theme target the right location.
+      const cleaned = cleanExternalConfigPaths(existing, config);
+      if (cleaned !== existing) {
+        writeFileSync(profilePath, cleaned, "utf-8");
+        return { success: true, message: `Updated Oh My Posh initialization in ${profilePath} to remove external theme paths.` };
+      }
       return { success: true, message: "Oh My Posh initialization is already present in the shell profile." };
     }
 
@@ -390,6 +403,82 @@ function getInitializationLine(shell: Shell): string {
     case "pwsh":
       return "oh-my-posh init pwsh | Invoke-Expression";
   }
+}
+
+function linkBuiltinThemes(themesDir: string): number {
+  const builtinDir = getBuiltinThemesDir();
+  if (!builtinDir) return 0;
+
+  let count = 0;
+  let entries: string[];
+  try {
+    entries = readdirSync(builtinDir);
+  } catch {
+    return 0;
+  }
+
+  for (const filename of entries) {
+    if (!filename.endsWith(".omp.json") && !filename.endsWith(".omp.yaml")) continue;
+    const src = join(builtinDir, filename);
+    const dest = join(themesDir, filename);
+    if (!existsSync(dest)) {
+      try {
+        copyFileSync(src, dest);
+        count++;
+      } catch {
+        // Skip files that cannot be copied.
+      }
+    }
+  }
+
+  return count;
+}
+
+const THEME_CONFIG_ARGUMENT = "(?:\"(?:\\\\.|[^\"])*\"|'(?:\\\\.|[^'])*'|[^\\s]+)";
+
+function cleanExternalConfigPaths(content: string, config: OhMyThemeConfig): string {
+  const lines = content.split(/\r?\n/);
+  const newline = content.includes("\r\n") ? "\r\n" : "\n";
+  const themeConfigPattern = new RegExp(
+    `^(oh-my-posh\\s+init\\s+(?:pwsh|powershell|bash|zsh|fish))(\\s+--config\\s+${THEME_CONFIG_ARGUMENT})(.*)$`,
+    "i",
+  );
+
+  let changed = false;
+  const cleaned = lines.map((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) return line;
+
+    const match = trimmed.match(themeConfigPattern);
+    if (!match) return line;
+
+    const configPath = extractConfigPath(trimmed);
+    if (!configPath) return line;
+
+    // If the config path is already inside the user's themes directory, leave it alone.
+    if (isPathUnderDirectory(configPath, config.themesDir)) return line;
+
+    // Remove the --config argument so oh-my-posh uses its default theme.
+    // Future theme switches via oh-my-theme will add the correct --config path.
+    changed = true;
+    return `${match[1]}${match[3]}`.trimEnd();
+  });
+
+  return changed ? cleaned.join(newline) : content;
+}
+
+function extractConfigPath(line: string): string | null {
+  const configMatch = line.match(
+    /--config\s+"((?:\\.|[^"])*)"|--config\s+'((?:\\.|[^'])*)'|--config\s+([^\s]+)/,
+  );
+  return configMatch?.[1] || configMatch?.[2] || configMatch?.[3] || null;
+}
+
+function isPathUnderDirectory(targetPath: string, directory: string): boolean {
+  // Normalize paths for comparison.
+  const normalizedTarget = targetPath.replace(/\\/g, "/").toLowerCase();
+  const normalizedDir = directory.replace(/\\/g, "/").toLowerCase();
+  return normalizedTarget.startsWith(normalizedDir.endsWith("/") ? normalizedDir : normalizedDir + "/");
 }
 
 function isOhMyPoshAvailable(): boolean {

@@ -112,46 +112,11 @@ npm run lint
 npm run build
 ```
 
-To run the same checks enforced by CI and the publishing workflow:
+To run the same checks enforced by CI:
 
 ```bash
 npm run verify
 ```
-
-## Releases
-
-Publishing is automated by [`.github/workflows/publish-npm.yml`](.github/workflows/publish-npm.yml). It runs the release checks, confirms that a pushed `v*` tag matches the version in `package.json`, and publishes with npm provenance.
-
-### First release
-
-npm Trusted Publishing is configured per existing npm package, so a package's first publication needs a short-lived npm **Granular Access Token**. Create a GitHub environment named `npm`, then save that token as an environment secret named `NPM_TOKEN` before pushing the first release tag.
-
-The token needs read/write package access, must permit the workflow's non-interactive publish if your npm account uses two-factor authentication, and should expire shortly after the first successful release. Do not commit it or save it as a repository-level secret.
-
-### Configure Trusted Publishing after the first release
-
-After the package exists on npm, configure **Trusted Publisher** in its npm settings for **GitHub Actions** with these exact values:
-
-- GitHub owner: `euynahz`
-- Repository: `onmytheme`
-- Workflow filename: `publish-npm.yml`
-- GitHub environment: `npm`
-- Allowed operation: `npm publish`
-
-Then remove the `NPM_TOKEN` environment secret and revoke the initial granular token in npm. Future tags authenticate using the workflow's OpenID Connect identity; it explicitly requests `contents: read` and `id-token: write` for that purpose.
-
-### Publish a version
-
-1. Update the version in `package.json` (for example, with `npm version <major|minor|patch>`).
-2. Run `npm run verify` locally.
-3. Commit the version change and push a matching tag such as `v0.1.1`:
-
-   ```bash
-   git tag v0.1.1
-   git push origin v0.1.1
-   ```
-
-The tag must exactly match `v` plus the package version. The workflow can also be started manually from GitHub Actions for a controlled re-run; confirm the version has not already been published before doing so.
 
 ## Terminology
 

@@ -186,6 +186,9 @@ export function getProfilePath(configuredPath?: string): string {
   if (configuredPath) return configuredPath;
 
   if (process.platform === "win32") {
+    const detected = detectPwshProfilePath();
+    if (detected) return detected;
+
     const home = process.env.USERPROFILE || process.env.HOME || "";
     const candidates = [
       join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1"),
@@ -208,6 +211,22 @@ export function getProfilePath(configuredPath?: string): string {
   }
 
   return candidates[shell];
+}
+
+function detectPwshProfilePath(): string | null {
+  for (const exe of ["pwsh", "powershell"]) {
+    try {
+      const result = execFileSync(
+        exe,
+        ["-NoProfile", "-Command", "$PROFILE"],
+        { encoding: "utf-8", timeout: 5_000 },
+      ).trim();
+      if (result) return result;
+    } catch {
+      continue;
+    }
+  }
+  return null;
 }
 
 export function getActiveTheme(): string | null {
