@@ -183,7 +183,12 @@ export function getActiveThemePath(): string | null {
 }
 
 export function getProfilePath(configuredPath?: string): string {
-  if (configuredPath) return configuredPath;
+  if (configuredPath) {
+    // Verify the configured path exists; if not, fall back to detection
+    if (existsSync(configuredPath)) {
+      return configuredPath;
+    }
+  }
 
   if (process.platform === "win32") {
     const detected = detectPwshProfilePath();

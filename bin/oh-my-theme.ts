@@ -194,6 +194,11 @@ async function initialize(): Promise<void> {
     name: "installInit",
     message: "Add the Oh My Posh initialization line to this shell profile now?",
     initial: true,
+  }, {
+    onCancel: () => {
+      console.log("\nProfile setup cancelled. No changes were made to the shell profile.");
+      return false;
+    },
   });
 
   if (setup.installInit) {
@@ -363,9 +368,6 @@ function ensureProfileInitialization(config: OhMyThemeConfig): {
     const initLine = getInitializationLine(config.shell);
 
     if (hasActiveOhMyPoshInitialization(existing, config.shell)) {
-      // If the existing init line has a --config pointing outside the user's
-      // themes directory, replace it with a clean init line so that future
-      // theme switches via oh-my-theme target the right location.
       const cleaned = cleanExternalConfigPaths(existing, config);
       if (cleaned !== existing) {
         writeFileSync(profilePath, cleaned, "utf-8");
@@ -380,6 +382,15 @@ function ensureProfileInitialization(config: OhMyThemeConfig): {
       `${existing}${separator}${INIT_LINE_MARKER}\n${initLine}\n`,
       "utf-8",
     );
+
+    // Verify the write succeeded
+    const written = readFileSync(profilePath, "utf-8");
+    if (!written.includes(initLine)) {
+      return {
+        success: false,
+        message: `Failed to verify the initialization line in ${profilePath}. The file may not have been updated correctly.`,
+      };
+    }
 
     return { success: true, message: `Added Oh My Posh initialization to ${profilePath}.` };
   } catch (error) {
