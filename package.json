@@ -1,0 +1,63 @@
+{
+  "name": "oh-my-theme",
+  "version": "0.1.0",
+  "private": false,
+  "scripts": {
+    "dev": "next dev",
+    "build": "node scripts/build-package.mjs",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run lint && npm run typecheck && npm run build && npm pack --dry-run",
+    "cli": "tsx bin/oh-my-theme.ts",
+    "cli:dev": "tsx bin/oh-my-theme.ts",
+    "pack": "npm pack --dry-run",
+    "prepare-package": "node scripts/prepare-package.mjs",
+    "prepack": "node scripts/prepare-package.mjs"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.6.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "commander": "^14.0.3",
+    "lucide-react": "^1.28.0",
+    "next": "16.2.12",
+    "prompts": "^2.4.2",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "shadcn": "^4.16.0",
+    "tailwind-merge": "^3.6.0",
+    "tsx": "^4.23.5",
+    "tw-animate-css": "^1.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/prompts": "^2.4.9",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.12",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "description": "A visual CLI for browsing, installing, and applying Oh My Posh themes",
+  "bin": {
+    "oh-my-theme": "./bin/oh-my-theme.mjs",
+    "omt": "./bin/oh-my-theme.mjs"
+  },
+  "files": [
+    "bin",
+    "scripts",
+    "src",
+    "public",
+    "next.config.ts",
+    "tsconfig.json",
+    "package.json",
+    "README.md",
+    ".next/standalone"
+  ],
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}
