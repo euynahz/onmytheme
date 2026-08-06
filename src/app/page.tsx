@@ -15,6 +15,7 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  FolderSync,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -44,6 +45,10 @@ export default function HomePage() {
         window.matchMedia("(prefers-color-scheme: dark)").matches)
     );
   });
+  const [osc99, setOsc99] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("osc99") === "true";
+  });
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState<string | null>(null);
   const [activeTheme, setActiveTheme] = useState<string | null>(null);
@@ -61,6 +66,12 @@ export default function HomePage() {
     setDark(next);
     localStorage.setItem("theme", next ? "dark" : "light");
     document.documentElement.classList.toggle("dark", next);
+  };
+
+  const toggleOsc99 = () => {
+    const next = !osc99;
+    setOsc99(next);
+    localStorage.setItem("osc99", next ? "true" : "false");
   };
 
   const fetchThemes = useCallback(async () => {
@@ -95,7 +106,7 @@ export default function HomePage() {
           "Content-Type": "application/json",
           "X-Oh-My-Theme-Request": "1",
         },
-        body: JSON.stringify({ themeName: theme.name }),
+        body: JSON.stringify({ themeName: theme.name, osc99 }),
       });
       const data = await res.json();
       if (data.success) {
@@ -162,7 +173,11 @@ export default function HomePage() {
     try {
       const res = await fetch(`/api/themes/${encodeURIComponent(theme.name)}/install`, {
         method: "POST",
-        headers: { "X-Oh-My-Theme-Request": "1" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Oh-My-Theme-Request": "1",
+        },
+        body: JSON.stringify({ osc99 }),
       });
       const data = await res.json();
       if (!data.success) {
@@ -342,6 +357,15 @@ export default function HomePage() {
                 </div>
               </DialogContent>
             </Dialog>
+            <Button
+              variant={osc99 ? "default" : "ghost"}
+              size="icon"
+              onClick={toggleOsc99}
+              aria-label="Toggle OSC99 directory inheritance"
+              title={osc99 ? "OSC99: on — splits inherit current directory" : "OSC99: off — use theme default"}
+            >
+              <FolderSync className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="icon" onClick={toggleDark} aria-label="Toggle color theme">
               {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>

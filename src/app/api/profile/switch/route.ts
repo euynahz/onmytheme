@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { switchTheme } from "@/lib/profile";
-import { getThemePath, isManagedTheme } from "@/lib/omp";
+import { ensureOsc99, getThemePath, isManagedTheme } from "@/lib/omp";
 import { normalizeThemeName } from "@/lib/theme-name";
 import { requireLocalUiRequest } from "@/lib/request-security";
 
@@ -9,8 +9,9 @@ export async function POST(request: Request) {
   if (requestError) return requestError;
 
   try {
-    const body = (await request.json()) as { themeName?: string };
+    const body = (await request.json()) as { themeName?: string; osc99?: boolean };
     const themeName = body.themeName ? normalizeThemeName(body.themeName) : null;
+    const osc99 = body.osc99 === true;
     const resolvedPath = themeName ? getThemePath(themeName) : null;
 
     if (!resolvedPath) {
@@ -25,6 +26,10 @@ export async function POST(request: Request) {
         { error: "Install this theme before applying it." },
         { status: 400 },
       );
+    }
+
+    if (osc99) {
+      ensureOsc99(resolvedPath);
     }
 
     const result = switchTheme(resolvedPath);

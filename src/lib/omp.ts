@@ -5,6 +5,7 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  writeFileSync,
 } from "fs";
 import { basename, isAbsolute, join, relative } from "path";
 import { getConfiguredProfilePath, getConfiguredShell, getThemesDir } from "./config";
@@ -129,6 +130,27 @@ export function installTheme(themePath: string): string {
   }
 
   return destination;
+}
+
+export function ensureOsc99(themePath: string): void {
+  if (!existsSync(themePath) || !themePath.endsWith(".omp.json")) return;
+
+  let content: string;
+  let parsed: Record<string, unknown>;
+  try {
+    content = readFileSync(themePath, "utf-8");
+    parsed = JSON.parse(content) as Record<string, unknown>;
+  } catch {
+    return;
+  }
+
+  const alreadyHasOsc99 =
+    parsed.pwd === "osc99" || parsed.osc99 === true;
+  if (alreadyHasOsc99) return;
+
+  parsed.pwd = "osc99";
+
+  writeFileSync(themePath, JSON.stringify(parsed, null, 2) + "\n", "utf-8");
 }
 
 export function generatePreviewImage(
